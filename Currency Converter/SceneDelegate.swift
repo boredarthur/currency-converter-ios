@@ -1,30 +1,58 @@
-//
-//  SceneDelegate.swift
-//  Currency Converter
-//
-//  Created by Артур Заволович on 26.10.2022.
-//
-
 import UIKit
+import Resolver
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
+    @Injected private var userDefaultsManager: UserDefaultsManager
+
     var window: UIWindow?
 
-
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
-        // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
-        // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
-        guard let _ = (scene as? UIWindowScene) else { return }
+    func scene(
+        _ scene: UIScene,
+        willConnectTo session: UISceneSession,
+        options connectionOptions: UIScene.ConnectionOptions
+    ) {
+        guard let windowScene = (scene as? UIWindowScene) else {
+            return
+        }
+        window = UIWindow(windowScene: windowScene)
+        let controller = CurrencyConverterController()
+        if UIApplication.isFirstLaunch() {
+            controller.configuration = configureFirstLaunch()
+        } else {
+            controller.configuration = loadUserDefaults()
+        }
+        window?.rootViewController = BaseNavigationController(rootViewController: controller)
+        window?.makeKeyAndVisible()
     }
 
-    func sceneDidDisconnect(_ scene: UIScene) {
-        // Called as the scene is being released by the system.
-        // This occurs shortly after the scene enters the background, or when its session is discarded.
-        // Release any resources associated with this scene that can be re-created the next time the scene connects.
-        // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
+    private func configureFirstLaunch() -> CurrencyConverterConfiguration {
+        userDefaultsManager.setDollarsAmount(0)
+        userDefaultsManager.setEurosAmount(1000)
+        userDefaultsManager.setYensAmount(0)
+
+        return CurrencyConverterConfiguration(
+            dollars:Currency.Usd(amount: 0),
+            euros: Currency.Euro(amount: 1000),
+            yens: Currency.Yen(amount: 0)
+        )
     }
+
+    private func loadUserDefaults() -> CurrencyConverterConfiguration {
+        return CurrencyConverterConfiguration(
+            dollars: Currency.Usd(
+                amount: userDefaultsManager.getValue(for: "dollarsAmount")
+            ),
+            euros: Currency.Euro(
+                amount: userDefaultsManager.getValue(for: "eurosAmount")
+            ),
+            yens: Currency.Yen(
+                amount: userDefaultsManager.getValue(for: "yensAmount")
+            )
+        )
+    }
+
+    func sceneDidDisconnect(_ scene: UIScene) { }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
@@ -46,7 +74,4 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
     }
-
-
 }
-
